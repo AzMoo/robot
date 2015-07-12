@@ -17,9 +17,13 @@ void setup() {
   {
     Serial.begin(9600);
     sabertooth = new Sabertooth(rxPin, txPin, 9600);
-    Serial.println("Initialising");
-    sabertooth->motors[0].setPower(64);
-    sabertooth->motors[1].setPower(191);
+    Serial.println("Initialising...");
+    sabertooth->motors[0].setBounds(127, 64, 1);
+    sabertooth->motors[1].setBounds(128, 191, 255);
+    sabertooth->motors[0].setAcceleration(GLOBAL_ACCELERATION);
+    sabertooth->motors[1].setAcceleration(GLOBAL_ACCELERATION);
+    sabertooth->halt(); // Initialise stopped
+    Serial.println("Initialised.");
   }
 }
 
@@ -34,26 +38,24 @@ void loop() {
 
     if(latestByte == NEWLINE) {
       commandBuffer.asString(command);
-      if(strcmp(command, "M0F") == 0) {
-        // Accelerate to Full Speed at 0.05units/ms
-        Serial.println("Accelerating M0");
-        sabertooth->motors[0].setTargetPower(127);
-        sabertooth->motors[0].setAcceleration(GLOBAL_ACCELERATION);
-      } else if(strcmp(command, "M0S") == 0) {
-        // Take 1 second to accelerate motor 0 to full stop
-        Serial.println("Stopping M0");
-        sabertooth->motors[0].setTargetPower(64);
-        sabertooth->motors[0].setAcceleration(GLOBAL_ACCELERATION);
-      } else if(strcmp(command, "M1F") == 0) {
-        // Accelerate to Full Speed at 0.05units/ms
-        Serial.println("Accelerating M1");
-        sabertooth->motors[1].setTargetPower(128);
-        sabertooth->motors[1].setAcceleration(GLOBAL_ACCELERATION);
-      } else if(strcmp(command, "M1S") == 0) {
-        // Take 1 second to accelerate motor 0 to full stop
-        Serial.println("Stopping M1");
-        sabertooth->motors[1].setTargetPower(191);
-        sabertooth->motors[1].setAcceleration(GLOBAL_ACCELERATION);
+      if(strcmp(command, "AllAhead") == 0) {
+        Serial.println("Received AllAhead");
+        sabertooth->forward();
+      } else if(strcmp(command, "AllStop") == 0) {
+        Serial.println("Received AllStop");
+        sabertooth->stop();
+      } else if(strcmp(command, "AllReverse") == 0) {
+        Serial.println("Received AllReverse");
+        sabertooth->reverse();
+      } else if(strcmp(command, "HardLeft") == 0) {
+        Serial.println("Received HardLeft");
+        sabertooth->turnLeft();
+      } else if(strcmp(command, "HardRight") == 0) {
+        Serial.println("Received HardRight");
+        sabertooth->turnRight();
+      } else if(strcmp(command, "SOS") == 0) {
+        Serial.println("Received SOS");
+        sabertooth->halt();
       }
       commandBuffer.empty();
     } else {

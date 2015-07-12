@@ -4,6 +4,12 @@
 #include "Arduino.h"
 #include "SoftwareSerial.h"
 
+struct Bounds {
+  int ahead;
+  int neutral;
+  int reverse;
+};
+
 class Motor
 {
   public:
@@ -12,8 +18,14 @@ class Motor
     void setPower(int power);
     void setAcceleration(double accel);
     void setTargetPower(int power);
+    void setBounds(int ahead, int neutral, int reverse);
+    void setFullAhead();
+    void setNeutral();
+    void setFullReverse();
+    void halt();
     int getCurrentPower();
   private:
+    Bounds bounds;
     int currentPower;
     int targetPower;
     unsigned int lastUpdate;
@@ -27,6 +39,12 @@ class Sabertooth
     ~Sabertooth();
     void update();
     Motor motors[2];
+    void forward();
+    void reverse();
+    void stop();
+    void halt();
+    void turnLeft();
+    void turnRight();
   private:
     int nextUpdate;
     SoftwareSerial * serial;
