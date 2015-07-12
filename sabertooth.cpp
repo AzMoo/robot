@@ -2,59 +2,81 @@
 #include "sabertooth.h"
 #include "SoftwareSerial.h"
 
+Motor::Motor() {
+  lastUpdate = millis();
+  acceleration = 0;
+  currentPower = 0;
+}
+
+void Motor::setTargetPower(int target) {
+  targetPower = target;
+}
+
+void Motor::setAcceleration(double accel) {
+  acceleration = accel;
+}
+
+int Motor::getCurrentPower() {
+  if(acceleration != 0 && currentPower != targetPower) {
+    int timePassed = millis() - lastUpdate;
+    //currentPower = currentPower + (timePassed * acceleration);
+
+    Serial.print("Time Passed: ");
+    Serial.println(timePassed);
+
+    if(currentPower > targetPower) {
+      currentPower = currentPower - (timePassed * acceleration);
+      
+      if(targetPower > currentPower) {
+        currentPower = targetPower;
+      }
+    } else {
+      currentPower = currentPower + (timePassed * acceleration);
+
+      if(targetPower < currentPower) {
+        currentPower = targetPower;
+      }
+    }
+  }
+
+  lastUpdate = millis();
+
+  return currentPower;
+}
+
+void Motor::setPower(int power) {
+  currentPower = power;
+  targetPower = power;
+}
 
 Sabertooth::Sabertooth(int rxPin, int txPin, int baud) {
   serial = new SoftwareSerial(rxPin, txPin);
   serial->begin(baud);
+  nextUpdate = 0;
 }
 
 Sabertooth::~Sabertooth() {
   delete serial;
 }
 
-void Sabertooth::M1Forward()
-{
-  Serial.println("Motor 1 Forward");
-  serial->write(127);
-}
+void Sabertooth::update() {
 
-void Sabertooth::M1Stop()
-{
-  Serial.println("Motor 1 Stop");
-  serial->write(64);
-}
+  int currentTime = millis();
+  
+  if(nextUpdate <= currentTime) {
+  
+    int motor0Power = motors[0].getCurrentPower();
+    int motor1Power = motors[1].getCurrentPower();
 
-void Sabertooth::M1Reverse()
-{
-  Serial.println("Motor 1 Reverse");
-  serial->write(1);
-}
+    Serial.print("Motor 0: ");
+    Serial.print(motor0Power);
+    Serial.print("\tMotor 1: ");
+    Serial.println(motor1Power);
+  
+    serial->write(motor0Power);
+    serial->write(motor1Power);
 
-/*
- * For some reason M2's values are all inverted. The documentation 
- * says M2 should range from full reverse at 128 to 
- * full forward at 255, but in reality it's doing the opposite.
- * 
- * I imagine this is why 191 is the stop point instead of 192.
- */
-
-void Sabertooth::M2Forward()
-{
-  Serial.println("Motor 2 Forward");
-  serial->write(128);
-}
-
-void Sabertooth::M2Stop()
-{
-  // This should be 192 but 192 gives me voltage
-  // and 191 does not.
-  Serial.println("Motor 2 Stop");
-  serial->write(191);
-}
-
-void Sabertooth::M2Reverse()
-{
-  Serial.println("Motor 2 Reverse");
-  serial->write(255);
+    nextUpdate = currentTime + 100;
+  }
 }
 
