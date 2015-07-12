@@ -1,13 +1,3 @@
-/*
- * min = 0
- * max = 100
- * difference = 100 YOU ARE GOING 100 STEPS
- * 
- * rate = 0.5 STEPS PER MILLISECOND
- * time = 200ms - not relevant
- */
-
-
 #include "ByteBuffer.h"
 #include "SoftwareSerial.h"
 #include "sabertooth.h"
@@ -23,7 +13,6 @@ int rxPin = 2;
 int txPin = 3;
 
 void setup() {
-  // put your setup code here, to run once:
   if(Serial)
   {
     Serial.begin(9600);
