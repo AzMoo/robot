@@ -1,33 +1,78 @@
 #include "ByteBuffer.h"
 #include "SoftwareSerial.h"
 #include "sabertooth.h"
+#include "NewPing.h"
 
-const char NEWLINE = 10;
-const double GLOBAL_ACCELERATION = 0.1;
+static const char NEWLINE = 10;
+static const double GLOBAL_ACCELERATION = 0.1;
+
+// Sabertooth SoftwareSerial pins
+static const int rxPin = 2;
+static const int txPin = 3;
+
+// Ultrasonic sensor
+static const int US_TRIGGER_PIN = 4;
+static const int US_ECHO_PIN = 5;
+static const int US_MAX_DISTANCE = 200;
+static const int US_SOS_CM = 10;
+static const unsigned long US_PING_INTERVAL = 50;
+
+// Initialisations
+
+// Serial command input
 char latestByte;
 int bytesAvailable = 0;
 ByteBuffer commandBuffer;
 char command[65];
+
+// motor controller
 Sabertooth * sabertooth;
-int rxPin = 2;
-int txPin = 3;
+
+// Ultrasonic
+NewPing sonar(US_TRIGGER_PIN, US_ECHO_PIN, US_MAX_DISTANCE);
+int us_distance;
+unsigned long pingTimer;
 
 void setup() {
   if(Serial)
   {
     Serial.begin(9600);
-    sabertooth = new Sabertooth(rxPin, txPin, 9600);
     Serial.println("Initialising...");
+    sabertooth = new Sabertooth(rxPin, txPin, 9600);
     sabertooth->motors[0].setBounds(127, 64, 1);
     sabertooth->motors[1].setBounds(128, 191, 255);
     sabertooth->motors[0].setAcceleration(GLOBAL_ACCELERATION);
     sabertooth->motors[1].setAcceleration(GLOBAL_ACCELERATION);
     sabertooth->halt(); // Initialise stopped
+    pingTimer = millis() + 100; // first ping time
     Serial.println("Initialised.");
   }
 }
 
+void echoCheck() {
+  if(sonar.check_timer()) {
+    us_distance = sonar.ping_result / US_ROUNDTRIP_CM;
+
+    Serial.print(millis());
+    Serial.print(": Ultrasonic : ");
+    Serial.print(us_distance);
+    Serial.println("cm");
+    
+    if(us_distance <= US_SOS_CM) {
+      Serial.println("SOS");
+      sabertooth->stop();
+    }
+  }
+}
+
 void loop() {
+
+  if(millis() >= pingTimer) {
+    sonar.timer_stop();
+    pingTimer = millis() + US_PING_INTERVAL;
+    sonar.ping_timer(echoCheck);
+  }
+  
   /* 
    *  Read until newline
    *  Execute command in buffer on Sabertooth
